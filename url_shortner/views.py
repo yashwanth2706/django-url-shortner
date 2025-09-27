@@ -29,7 +29,10 @@ def index(request):
 
 def redirect_view(request, short_code):
     """Resolve a short code and redirect to the original URL. Track the click."""
-    url_obj = get_object_or_404(URL, short_code=short_code)
+    try:
+        url_obj = URL.objects.get(short_code=short_code)
+    except URL.DoesNotExist:
+        return render(request, "404/Error.html", status=404)
 
     # Track click
     try:

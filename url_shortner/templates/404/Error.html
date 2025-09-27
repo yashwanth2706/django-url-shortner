@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>404 - Page Not Found</title>
+    <style>
+        body {
+            background: #f8f9fa;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .error-img {
+            max-width: 350px;
+            margin-bottom: 30px;
+        }
+        .error-message {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .error-detail {
+            color: #666;
+            margin-bottom: 25px;
+        }
+        .home-link {
+            display: inline-block;
+            padding: 10px 25px;
+            background: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .home-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <img src="{% static 'img/error_404.png' %}" alt="404 Error" class="error-img">
+    <div class="error-message">404 - Page Not Found</div>
+    <div class="error-detail">
+        The Short URL you have provided does not exist.<br>
+        Please check the Short URL or return to the homepage.
+    </div>
+    <a href="/" class="home-link">Go to Homepage</a>
+</body>
+</html>
