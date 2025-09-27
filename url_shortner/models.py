@@ -1,8 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-import secrets
-import string
+import string, secrets
 
 def generate_short_code(length: int = 8):
     """Generate a URL-safe short code of `length` using base62-like chars."""
@@ -15,6 +14,7 @@ class URL(models.Model):
     original_url = models.URLField(max_length=2048)
     short_code = models.CharField(max_length=12, unique=True, db_index=True)
     created_at = models.DateTimeField(default=timezone.now)
+    click_count = models.IntegerField(default=0) 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -30,7 +30,7 @@ class URL(models.Model):
         # If no short_code, create one (ensure uniqueness)
         if not self.short_code:
             for _ in range(5):  # try 5 times then raise
-                code = generate_short_code(6)
+                code = generate_short_code(8)
                 if not URL.objects.filter(short_code=code).exists():
                     self.short_code = code
                     break

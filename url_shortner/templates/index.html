@@ -23,16 +23,35 @@
 <body>
   <div class="card w-100" style="max-width: 450px;">
     <div class="card-body">
-      <h5 class="card-title text-center mb-4">Shorten a long URL</h5>
+      <h5 class="card-title text-left mt-4">Shorten a long URL</h5>
 
       <!-- URL Form -->
-      <div id="form-section" {% if short_url %}style="display:none;"{% endif %}>
+    <div id="form-section" {% if short_url %}style="display:none;"{% endif %}>
         <form method="post" class="d-flex flex-column">
-          {% csrf_token %}
-          {{ form.original_url }}
-          <button type="submit" class="btn btn-success w-100 mt-3">Shorten URL</button>
+        {% csrf_token %}
+
+        <!-- Long URL input -->
+        <div class="mb-3">
+            {{ form.original_url }}
+            {% if form.original_url.errors %}
+            <div class="text-danger small">{{ form.original_url.errors.0 }}</div>
+            {% endif %}
+        </div>
+        <h5 class="card-title text-left mt-4">Customize your link</h5>
+        <!-- Alias input -->
+        <div class="mb-3">
+            {{ form.short_code }}
+            <small class="form-text text-muted">
+            Optional: Enter a custom alias (e.g. "my-link"). Leave blank for random.
+            </small>
+            {% if form.short_code.errors %}
+            <div class="text-danger small">{{ form.short_code.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 mt-3">Shorten URL</button>
         </form>
-      </div>
+    </div>
 
       <!-- Result Section -->
       <div id="result-section" {% if not short_url %}style="display:none;"{% endif %}>
