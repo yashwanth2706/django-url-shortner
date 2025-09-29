@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>URL Shortener</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap icons + Tooltip init -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body {
       background: linear-gradient(135deg, #ffffffff, #ffffffff);
@@ -25,31 +26,105 @@
     <div class="card-body">
       <h5 class="card-title text-left mt-4">Shorten a long URL</h5>
 
-      <!-- URL Form -->
+    <!-- URL Form -->
     <div id="form-section" {% if short_url %}style="display:none;"{% endif %}>
-        <form method="post" class="d-flex flex-column">
-            {% csrf_token %}
+      <form method="post" class="d-flex flex-column" id="urlForm">
+        {% csrf_token %}
 
-            <!-- Long URL input -->
-            <div class="mb-3">
-                {{ form.original_url }}
-                {% if form.original_url.errors %}
-                <div class="text-danger small">{{ form.original_url.errors.0 }}</div>
-                {% endif %}
+        <!-- Long URL input -->
+        <div class="mb-3">
+            {{ form.original_url }}
+            {% if form.original_url.errors %}
+            <div class="text-danger small">{{ form.original_url.errors.0 }}</div>
+            {% endif %}
+            <div id="urlError" style="display:none;">
+            <div class="alert alert-danger p-2 mb-2" role="alert">
+              Please enter a valid URL (e.g. https://example.com).
             </div>
-            <h5 class="card-title text-left mt-4">Customize your link</h5>
-            <!-- Alias input -->
-            <div class="mb-3">
-                {{ form.short_code }}
-                <small class="form-text text-muted">
-                Optional: Enter a custom alias (e.g. "my-link"). Leave blank for random.
-                </small>
-                {% if form.short_code.errors %}
-                <div class="text-danger small">{{ form.short_code.errors.0 }}</div>
-                {% endif %}
             </div>
-            <button type="submit" class="btn btn-success w-100 mt-3">Shorten URL</button>
-        </form>
+        </div>
+        <h5 class="card-title text-left mt-4">Customize your link</h5>
+        <!-- Alias input -->
+        <div class="mb-3">
+            {{ form.short_code }}
+            <small class="form-text text-muted">
+            Optional: Enter a custom alias (e.g. "my-link"). Leave blank for random.
+            </small>
+            {% if form.short_code.errors %}
+            <div class="text-danger small">{{ form.short_code.errors.0 }}</div>
+            {% endif %}
+            <div id="aliasError" class="text-danger small" style="display:none;"></div>
+        </div>
+        <script>
+          function validateAliasInput(value) {
+            // Only allow a-z, A-Z, 0-9, length 5-12
+            const regex = /^[a-zA-Z0-9]{5,12}$/;
+            return value === "" || regex.test(value);
+          }
+
+          function validateUrlInput(value) {
+            // Basic URL validation (http/https, domain, etc.)
+            const regex = /^(https?:\/\/)[^\s$.?#].[^\s]*$/i;
+            return regex.test(value);
+          }
+
+          document.addEventListener("DOMContentLoaded", function() {
+            const aliasInput = document.querySelector('[name="short_code"]');
+            const errorDiv = document.getElementById("aliasError");
+            const urlInput = document.querySelector('[name="original_url"]');
+            const urlErrorDiv = document.getElementById("urlError");
+            const form = document.getElementById("urlForm");
+
+            if(aliasInput){
+            aliasInput.addEventListener("input", function() {
+              if (aliasInput.value.length > 0 && !validateAliasInput(aliasInput.value)) {
+                errorDiv.textContent = "Alias must be 5-12 characters (letters and numbers only).";
+                errorDiv.style.display = "block";
+              } else {
+                errorDiv.textContent = "";
+                errorDiv.style.display = "none";
+              }
+            });
+            }
+
+            if(urlInput){
+            urlInput.addEventListener("input", function() {
+              if (!validateUrlInput(urlInput.value)) {
+                urlErrorDiv.style.display = "block";
+              } else {
+                urlErrorDiv.style.display = "none";
+              }
+            });
+            }
+
+            if(form){
+            form.addEventListener("submit", function(e){
+              let valid = true;
+              if(aliasInput && aliasInput.value.length > 0 && !validateAliasInput(aliasInput.value)){
+                errorDiv.textContent = "Alias must be 5-12 characters (letters and numbers only).";
+                errorDiv.style.display = "block";
+                aliasInput.focus();
+                valid = false;
+              }
+              if(urlInput && !validateUrlInput(urlInput.value)){
+                urlErrorDiv.style.display = "block";
+                urlInput.focus();
+                valid = false;
+              }
+              if(!valid){
+                e.preventDefault();
+                return false;
+              }
+            });
+            }
+          });
+        </script>
+        <!--
+          IMPORTANT: Client-side validation might be bypassed by attackers.
+          Server side validation added for extra security!
+        -->
+        <button type="submit" class="btn btn-success w-100 mt-3">Shorten URL</button>
+      </form>
     </div>
 
       <!-- Result Section -->
@@ -75,7 +150,85 @@
       </div>
     </div>
   </div>
+  
+<!-- Features card -->
+<div class="card ms-5">
+  <div class="card-header">
+    Features
+  </div>
+  <div class="card-body">
+    <h5 class="card-title">Manage your URLs Effortlessly</h5>
+    <ul class="list-group m-2">
+        <li class="list-group-item">Custom short links & aliases</li>
+        <li class="list-group-item">QR code generation for each URL</li>
+        <li class="list-group-item">Easy copy & share options</li>
+        <li class="list-group-item">Manage and edit your URLs</li>
+        <li class="list-group-item">Delete unwanted links</li>
+    </ul>
+    <div class="d-flex justify-content-end">
+      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">My URLs</button>
+    </div>
+  </div>
+</div>
 
+<!-- Offcanvas right -->
+<div class="offcanvas offcanvas-end offcanvas-wider" tabindex="-1" id="offcanvasRight"
+     aria-labelledby="offcanvasRightLabel">
+  <div class="offcanvas-header">
+    <h5 id="offcanvasRightLabel">Your recent URLs</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+
+    <!-- Example URL Item -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-1">
+          <a href="https://short.ly/abcd1234" target="_blank">short.ly/abcd1234</a>
+        </h6>
+        <p class="text-muted small mb-2">https://example.com/some/long/url</p>
+        <p class="text-muted small">2 days ago</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-title="Rename URL">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-info" data-bs-toggle="tooltip" data-bs-title="Edit URL">
+            <i class="bi bi-gear"></i>
+          </button>
+          <button class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-title="Generate QR Code">
+            <i class="bi bi-qr-code"></i>
+          </button>
+          <button class="btn btn-sm btn-success" data-bs-toggle="tooltip" data-bs-title="Share URL">
+            <i class="bi bi-share"></i>
+          </button>
+          <button class="btn btn-sm btn-success" data-bs-toggle="tooltip" data-bs-title="Copy URL">
+            <i class="bi bi-clipboard"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" data-bs-toggle="tooltip" data-bs-title="Delete URL">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Repeat similar blocks for more URLs -->
+    
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+  })
+</script>
+<style>
+  .offcanvas-wider {
+    --bs-offcanvas-width: 550px;
+  }
+</style>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -100,5 +253,6 @@
       }
     });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

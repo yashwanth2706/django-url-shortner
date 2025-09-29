@@ -1,10 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseRedirect, HttpResponse
-from django.conf import settings
-from django.db.models import F
 from .models import URL, Click
 from .forms import ShortenForm
 import string, secrets
+from django.contrib.gis.geoip2 import GeoIP2
+from geoip2.errors import AddressNotFoundError
 
 def generate_short_code(length: int = 8):
     """Generate a URL-safe short code of `length` using base62-like chars."""
@@ -27,21 +26,62 @@ def index(request):
     return render(request, "index.html", {"form": form, "short_url": short_url})
 
 
+def get_client_ip(request):
+    """Get the client's real IP address."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 def redirect_view(request, short_code):
-    """Resolve a short code and redirect to the original URL. Track the click."""
-    try:
-        url_obj = URL.objects.get(short_code=short_code)
-    except URL.DoesNotExist:
-        return render(request, "404/Error.html", status=404)
+    """
+    Redirects to the original URL and logs a detailed click event.
+    """
+    url_instance = get_object_or_404(URL, short_code=short_code)
+    
+    # Get IP address and user agent data
+    ip_address = get_client_ip(request)
+    user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+    user_agent = request.user_agent
 
-    # Track click
+    # Initialize geolocation and language data
+    country, city, latitude, longitude = None, None, None, None
+    language = request.META.get('HTTP_ACCEPT_LANGUAGE', '').split(',')[0]
+
+    # Geolocation lookup
     try:
-        Click.objects.create(
-            url=url_obj,
-            user_agent=request.META.get("HTTP_USER_AGENT", "")[:1024],
-        )
-        URL.objects.filter(pk=url_obj.pk).update(click_count=F("click_count") + 1)
-    except Exception:
+        g = GeoIP2()
+        location_info = g.city(ip_address)
+        country = location_info.get('country_name')
+        city = location_info.get('city')
+        latitude = location_info.get('latitude')
+        longitude = location_info.get('longitude')
+    except AddressNotFoundError:
+        # IP address not found in the database, so we leave location fields as None
         pass
+    except Exception as e:
+        country, city, latitude, longitude = None, None, None, None
+        # print(f"Geolocation error: {e}")
 
-    return HttpResponseRedirect(url_obj.original_url)
+    # Log the detailed click event
+    Click.objects.create(
+        url=url_instance,
+        ip_address=ip_address,
+        user_agent=user_agent_string,
+        # Parsed User Agent data
+        browser=user_agent.browser.family,
+        os_type=user_agent.os.family,
+        device=user_agent.device.family,
+        # Geolocation data
+        country=country,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+        # Language
+        language=language,
+    )
+
+    # Finally, redirect to the original URL
+    return redirect(url_instance.original_url)
