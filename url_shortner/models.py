@@ -25,6 +25,10 @@ class URL(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=['short_code'])]
+        
+    @property
+    def click_count(self):
+        return self.clicks.count()
 
     def save(self, *args, **kwargs):
         # If no short_code, create one (ensure uniqueness)
@@ -46,11 +50,19 @@ class URL(models.Model):
 
 
 class Click(models.Model):
-    """Store click events for analytics."""
+    """Stores a single click event for a shortened URL."""
+    url = models.ForeignKey(URL, on_delete=models.CASCADE, related_name="clicks")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, default="")
+    country = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    language = models.CharField(max_length=50, blank=True)
+    os_type = models.CharField(max_length=50, blank=True)
+    device = models.CharField(max_length=50, blank=True)
+    browser = models.CharField(max_length=50, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
-    url = models.ForeignKey(URL, on_delete=models.CASCADE, related_name='clicks')
-    timestamp = models.DateTimeField(default=timezone.now)
-    user_agent = models.TextField(null=True, blank=True)
-
-    class Meta:
-        indexes = [models.Index(fields=['url', 'timestamp'])]
+    def __str__(self):
+        return f"Click on {self.url.short_code} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
