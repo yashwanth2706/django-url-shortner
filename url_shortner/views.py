@@ -41,7 +41,10 @@ def redirect_view(request, short_code):
     """
     Redirects to the original URL and logs a detailed click event.
     """
-    url_instance = get_object_or_404(URL, short_code=short_code)
+    try:
+        url_instance = URL.objects.get(short_code=short_code)
+    except URL.DoesNotExist:
+        return render(request, "404/Error.html", status=404)
     
     # Get IP address and user agent data
     ip_address = get_client_ip(request)
