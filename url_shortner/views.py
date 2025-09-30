@@ -4,6 +4,8 @@ from .forms import ShortenForm
 import string, secrets
 from django.contrib.gis.geoip2 import GeoIP2
 from geoip2.errors import AddressNotFoundError
+from django.http import JsonResponse
+from django.utils.timezone import localtime
 
 def generate_short_code(length: int = 8):
     """Generate a URL-safe short code of `length` using base62-like chars."""
@@ -85,3 +87,18 @@ def redirect_view(request, short_code):
 
     # Finally, redirect to the original URL
     return redirect(url_instance.original_url)
+
+def recent_urls(request):
+    """
+    API endpoint: Return a list of recently created short URLs as JSON.
+    """
+    urls = URL.objects.order_by('-created_at')[:10]
+    data = []
+    for url in urls:
+            data.append({
+                "id": url.id,
+                "original_url": url.original_url,
+                "short_url": url.get_short_url(request.get_host()),
+                "created_at": localtime(url.created_at).isoformat(),
+            })
+    return JsonResponse({"urls": data})
