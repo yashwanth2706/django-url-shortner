@@ -166,7 +166,7 @@
         <li class="list-group-item">Delete unwanted links</li>
     </ul>
     <div class="d-flex justify-content-end">
-      <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">My URLs</button>
+      <button id="my_urls" class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">My URLs</button>
     </div>
   </div>
 </div>
@@ -181,35 +181,126 @@
   <div class="offcanvas-body">
 
     <!-- Example URL Item -->
-    <div class="card mb-3">
-      <div class="card-body">
-        <h6 class="mb-1">
-          <a href="https://short.ly/abcd1234" target="_blank">short.ly/abcd1234</a>
-        </h6>
-        <p class="text-muted small mb-2">https://example.com/some/long/url</p>
-        <p class="text-muted small">2 days ago</p>
-        <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-title="Rename URL">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-info" data-bs-toggle="tooltip" data-bs-title="Edit URL">
-            <i class="bi bi-gear"></i>
-          </button>
-          <button class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-title="Generate QR Code">
-            <i class="bi bi-qr-code"></i>
-          </button>
-          <button class="btn btn-sm btn-success" data-bs-toggle="tooltip" data-bs-title="Share URL">
-            <i class="bi bi-share"></i>
-          </button>
-          <button class="btn btn-sm btn-success" data-bs-toggle="tooltip" data-bs-title="Copy URL">
-            <i class="bi bi-clipboard"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" data-bs-toggle="tooltip" data-bs-title="Delete URL">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </div>
+    <div id="recent-urls-list">
+      <!-- Recent URLs will be loaded here by JS -->
     </div>
+    <script>
+    document.getElementById("my_urls").addEventListener("click", function() {
+        fetch("{% url 'recent_urls' %}")
+          .then(response => response.json())
+          .then(data => {
+            const container = document.getElementById("recent-urls-list");
+            container.textContent = ""; // Clear previous content
+
+            if (data.urls && data.urls.length > 0) {
+              data.urls.forEach(url => {
+                // Format created_at as "x days ago"
+                function timeAgo(dateStr) {
+                  const date = new Date(dateStr);
+                  const now = new Date();
+                  const diffMs = now - date;
+                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                  if (diffDays === 0) return "Today";
+                  if (diffDays === 1) return "1 day ago";
+                  return `${diffDays} days ago`;
+                }
+
+                // Card
+                const card = document.createElement("div");
+                card.className = "card mb-3";
+
+                const cardBody = document.createElement("div");
+                cardBody.className = "card-body";
+
+                // Short URL
+                const h6 = document.createElement("h6");
+                h6.className = "mb-1";
+                const a = document.createElement("a");
+                a.href = url.short_url;
+                a.target = "_blank";
+                a.textContent = url.short_url.replace(/^https?:\/\//, "");
+                h6.appendChild(a);
+
+                // Original URL
+                const pOriginal = document.createElement("p");
+                pOriginal.className = "text-muted small mb-2";
+                pOriginal.textContent = url.original_url;
+
+                // Created at
+                const pCreated = document.createElement("p");
+                pCreated.className = "text-muted small";
+                pCreated.textContent = timeAgo(url.created_at);
+
+                // Button group
+                const btnGroup = document.createElement("div");
+                btnGroup.className = "d-flex flex-wrap gap-2";
+
+                // Helper to create buttons
+                function createBtn(className, tooltip, iconClass, extra = {}) {
+                  const btn = document.createElement("button");
+                  btn.className = className;
+                  btn.type = "button";
+                  btn.setAttribute("data-bs-toggle", "tooltip");
+                  btn.setAttribute("data-bs-title", tooltip);
+                  if (extra["data-url"]) btn.setAttribute("data-url", extra["data-url"]);
+                  const icon = document.createElement("i");
+                  icon.className = iconClass;
+                  btn.appendChild(icon);
+                  return btn;
+                }
+
+                btnGroup.appendChild(createBtn("btn btn-sm btn-primary", "Rename URL", "bi bi-pencil"));
+                btnGroup.appendChild(createBtn("btn btn-sm btn-info", "Edit URL", "bi bi-gear"));
+                btnGroup.appendChild(createBtn("btn btn-sm btn-secondary", "Generate QR Code", "bi bi-qr-code"));
+                btnGroup.appendChild(createBtn("btn btn-sm btn-success", "Share URL", "bi bi-share"));
+                btnGroup.appendChild(createBtn("btn btn-sm btn-success copy-url-btn", "Copy URL", "bi bi-clipboard", { "data-url": url.short_url }));
+                btnGroup.appendChild(createBtn("btn btn-sm btn-danger", "Delete URL", "bi bi-trash"));
+
+                cardBody.appendChild(h6);
+                cardBody.appendChild(pOriginal);
+                cardBody.appendChild(pCreated);
+                cardBody.appendChild(btnGroup);
+                card.appendChild(cardBody);
+                container.appendChild(card);
+              });
+
+              // Re-initialize tooltips for new elements
+              const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+              tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
+              // Copy URL button handler
+              container.querySelectorAll(".copy-url-btn").forEach(btn => {
+                btn.addEventListener("click", async function() {
+                  try {
+                    await navigator.clipboard.writeText(btn.getAttribute("data-url"));
+                    const tooltip = bootstrap.Tooltip.getInstance(btn);
+                    btn.setAttribute("data-bs-original-title", "Copied!");
+                    tooltip.show();
+                    setTimeout(() => {
+                      btn.setAttribute("data-bs-original-title", "Copy URL");
+                    }, 2000);
+                  } catch (err) {
+                    alert("Failed to copy");
+                  }
+                });
+              });
+            } else {
+              const noUrlsDiv = document.createElement("div");
+              noUrlsDiv.className = "text-muted";
+              noUrlsDiv.textContent = "No recent URLs found.";
+              container.appendChild(noUrlsDiv);
+            }
+          })
+          .catch(() => {
+            const container = document.getElementById("recent-urls-list");
+            container.textContent = "";
+            const errorDiv = document.createElement("div");
+            errorDiv.className = "text-danger";
+            errorDiv.textContent = "Failed to load URLs.";
+            container.appendChild(errorDiv);
+          });
+      });
+    </script>
 
     <!-- Repeat similar blocks for more URLs -->
     
