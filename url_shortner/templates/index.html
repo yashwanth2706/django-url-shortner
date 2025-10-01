@@ -184,6 +184,14 @@
     <div id="recent-urls-list">
       <!-- Recent URLs will be loaded here by JS -->
     </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+  })
+</script>
     <script>
     document.getElementById("my_urls").addEventListener("click", function() {
         fetch("{% url 'recent_urls' %}")
@@ -248,9 +256,11 @@
                   btn.appendChild(icon);
                   return btn;
                 }
-
-                btnGroup.appendChild(createBtn("btn btn-sm btn-primary", "Rename URL", "bi bi-pencil"));
-                btnGroup.appendChild(createBtn("btn btn-sm btn-info", "Edit URL", "bi bi-gear"));
+    // Inline Edit logic
+    const renameBtn = createBtn("btn btn-sm btn-primary", "Rename URL", "bi bi-pencil");
+    const editBtn = createBtn("btn btn-sm btn-info", "Edit URL", "bi bi-gear");
+                btnGroup.appendChild(renameBtn);
+                btnGroup.appendChild(editBtn);
                 btnGroup.appendChild(createBtn("btn btn-sm btn-secondary", "Generate QR Code", "bi bi-qr-code"));
                 btnGroup.appendChild(createBtn("btn btn-sm btn-success", "Share URL", "bi bi-share"));
                 btnGroup.appendChild(createBtn("btn btn-sm btn-success copy-url-btn", "Copy URL", "bi bi-clipboard", { "data-url": url.short_url }));
@@ -262,6 +272,62 @@
                 cardBody.appendChild(btnGroup);
                 card.appendChild(cardBody);
                 container.appendChild(card);
+
+// Rename Short URL inline
+renameBtn.addEventListener("click", () => {
+    makeInlineEditable(h6, url.short_url.replace(/^https?:\/\//, ""), (newVal, showError) => {
+        fetch(`/edit-short-url/${url.id}/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+            body: new URLSearchParams({ short_code: newVal })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showError(data.error);
+            } else {
+                h6.innerHTML = `<a href="/${data.short_url}" target="_blank">${data.short_url}</a>`;
+            }
+        })
+        .catch(() => showError("Something went wrong"));
+    });
+});
+
+// Edit Long URL inline
+editBtn.addEventListener("click", () => {
+    makeInlineEditable(pOriginal, url.original_url, (newVal, showError) => {
+        fetch(`/edit-long-url/${url.id}/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+            body: new URLSearchParams({ original_url: newVal })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showError(data.error);
+            } else {
+                pOriginal.textContent = data.original_url;
+            }
+        })
+        .catch(() => showError("Something went wrong"));
+    });
+});
+// Django bydefault provides a crsf_tocken inside cookie
+// this function call method is helpful if willing to port from template based webpage to framework based webpage
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
               });
 
               // Re-initialize tooltips for new elements
@@ -343,6 +409,42 @@
         });
       }
     });
+  </script>
+  <script>
+function makeInlineEditable(targetEl, initialValue, saveHandler) {
+    // Clear target element
+    targetEl.innerHTML = "";
+
+    // Input field
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control form-control-sm d-inline-block w-auto";
+    input.value = initialValue;
+
+    // Save button
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn btn-sm btn-success ms-2";
+    saveBtn.innerHTML = '<i class="bi bi-check"></i>';
+
+    // Cancel button
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn-sm btn-secondary ms-1";
+    cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
+
+    targetEl.appendChild(input);
+    targetEl.appendChild(saveBtn);
+    targetEl.appendChild(cancelBtn);
+
+    // Handle Save
+    saveBtn.addEventListener("click", () => {
+        saveHandler(input.value);
+    });
+
+    // Handle Cancel -> revert
+    cancelBtn.addEventListener("click", () => {
+        targetEl.innerHTML = initialValue; // just restore original text
+    });
+}
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
