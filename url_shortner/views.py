@@ -6,6 +6,7 @@ from django.contrib.gis.geoip2 import GeoIP2
 from geoip2.errors import AddressNotFoundError
 from django.http import JsonResponse
 from django.utils.timezone import localtime
+from django.views.decorators.http import require_POST
 
 def generate_short_code(length: int = 8):
     """Generate a URL-safe short code of `length` using base62-like chars."""
@@ -105,3 +106,31 @@ def recent_urls(request):
                 "created_at": localtime(url.created_at).isoformat(),
             })
     return JsonResponse({"urls": data})
+
+@require_POST
+def edit_short_url(request, pk):
+    """Edit short code (alias) of a URL"""
+    new_code = request.POST.get("short_code", "").strip()
+    if not new_code:
+        return JsonResponse({"success": False, "error": "Alias cannot be empty"}, status=400)
+
+    # Check if alias already exists
+    if URL.objects.filter(short_code=new_code).exclude(pk=pk).exists():
+        return JsonResponse({"success": False, "error": "Alias not available"}, status=400)
+
+    url_obj = get_object_or_404(URL, pk=pk)
+    url_obj.short_code = new_code
+    url_obj.save(update_fields=["short_code"])
+    return JsonResponse({"success": True, "short_url": url_obj.short_code})
+
+@require_POST
+def edit_long_url(request, pk):
+    """Edit original (long) URL"""
+    new_url = request.POST.get("original_url", "").strip()
+    if not new_url:
+        return JsonResponse({"success": False, "error": "URL cannot be empty"}, status=400)
+
+    url_obj = get_object_or_404(URL, pk=pk)
+    url_obj.original_url = new_url
+    url_obj.save(update_fields=["original_url"])
+    return JsonResponse({"success": True, "original_url": url_obj.original_url})
