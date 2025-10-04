@@ -7,6 +7,12 @@ from geoip2.errors import AddressNotFoundError
 from django.http import JsonResponse
 from django.utils.timezone import localtime
 from django.views.decorators.http import require_POST
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
+import re
+
+# pre compile regex
+SHORT_CODE_REGEX = re.compile(r'^[A-Za-z0-9]{5,12}$')
 
 def generate_short_code(length: int = 8):
     """Generate a URL-safe short code of `length` using base62-like chars."""
@@ -114,6 +120,13 @@ def edit_short_url(request, pk):
     if not new_code:
         return JsonResponse({"success": False, "error": "Alias cannot be empty"}, status=400)
 
+    # Validate new code min 5 max 12 (a-z, A-Z, 0-9)
+    if not SHORT_CODE_REGEX.fullmatch(new_code):
+        return JsonResponse({
+            "success":False,
+            "error":"Alias must be 5 - 12 charecters only and contain only letters or numbers",
+            },status=400)
+    
     # Check if alias already exists
     if URL.objects.filter(short_code=new_code).exclude(pk=pk).exists():
         return JsonResponse({"success": False, "error": "Alias not available"}, status=400)
@@ -129,6 +142,17 @@ def edit_long_url(request, pk):
     new_url = request.POST.get("original_url", "").strip()
     if not new_url:
         return JsonResponse({"success": False, "error": "URL cannot be empty"}, status=400)
+    
+    # Validate long URL
+    validator = URLValidator(schemes=["http", "https"])
+    try:
+        validator(new_url)
+    except ValidationError:
+        return JsonResponse({
+            "success": False,
+            "error": "Invalid URL format. Must be a valid http or https URL."
+        }, status=400)
+
 
     url_obj = get_object_or_404(URL, pk=pk)
     url_obj.original_url = new_url

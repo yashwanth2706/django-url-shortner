@@ -14,3 +14,10 @@ body {
 .offcanvas-wider {
     --bs-offcanvas-width: 550px;
 }
+
+/*
+* Prevent Bootstrap modal greyout
+*/
+.modal-backdrop {
+    z-index: 0;
+}
