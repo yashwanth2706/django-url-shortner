@@ -131,6 +131,46 @@
     <div id="recent-urls-list">
       <!-- Recent URLs will be loaded here by JS -->
     </div>
+    <template id="url-card-template">
+        <div class="card mb-3 url-card" data-url-id="">
+            <div class="card-body">
+                <h6 class="mb-1 short-url-display">
+                    <a href="#" target="_blank" class="short-url-link"></a>
+                </h6>
+
+                <p class="text-muted small mb-2 original-url-display"></p>
+
+                <p class="text-muted small created-at-display"></p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-primary rename-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Rename Short URL">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-info edit-long-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Edit Long URL">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary qr-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Generate QR Code">
+                        <i class="bi bi-qr-code"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-success share-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Share URL">
+                        <i class="bi bi-share"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-success copy-url-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Copy URL" data-url="">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger delete-btn"
+                            data-bs-toggle="tooltip" data-bs-title="Delete URL">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 <!-- 
     This Bootstrap 5 Modal structure uses standard Bootstrap utilities 
     and the required IDs for integration with recentURLs_modal.js.
