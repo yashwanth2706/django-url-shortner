@@ -4,6 +4,10 @@ A simple and efficient **URL Shortener** built with **Django**.
 This project allows users to shorten long URLs into compact, easy-to-share links - similar to Bitly or TinyURL - with features like click tracking and expiration dates.
 
 ---
+## Project Walkthrough:
+
+### Shorten a Long URL:
+![Project Demo](https://raw.githubusercontent.com/yashwanth2706/django-url-shortner/main/walkthrough/django_urlshortener.gif)
 
 ## 🚀 Features
 
