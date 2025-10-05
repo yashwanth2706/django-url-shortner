@@ -33,12 +33,12 @@ This project allows users to shorten long URLs into compact, easy-to-share links
 git clone https://github.com/yourusername/django-url-shortener.git
 cd django-url-shortener
 # create a virtual envirornment
-$ python3 -m venv .venv
+python3 -m venv .venv
 # Activate virtual envirornment
-$ source .venv/bin/activate
+source .venv/bin/activate
 # install dependencies
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 # Run the project
-$ python3 manage.py runserver
+python3 manage.py runserver
 # Visit the project locally (Paste below in browser)
 http://localhost:8000
